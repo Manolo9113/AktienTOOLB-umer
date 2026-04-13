@@ -131,24 +131,57 @@ c2.metric(f"{get_color_inverse(debt,1,2)} Debt",f"{debt:.2f}")
 c3.metric(f"{get_color_inverse(beta,1.2,1.6)} Beta",f"{beta:.2f}")
 
 # ==================== SCANNER ====================
-st.markdown("## 🚀 Mini Scanner")
+st.markdown("## 🚀 Top Aktien (Scanner)")
 
 scan_list = ["AAPL","MSFT","NVDA","GOOGL","META","AMZN","TSLA","JNJ"]
+
 results = []
 
 for t in scan_list:
-    i,_ = load_data(t)
+    i, _ = load_data(t)
     try:
         fcf = i.get('freeCashflow')
         mc = i.get('marketCap')
         fy = (fcf/mc*100) if fcf and mc else 0
         rg = (i.get('revenueGrowth') or 0)*100
         r40 = rg + fy
-        results.append((t,r40))
+
+        results.append({
+            "ticker": t,
+            "score": r40
+        })
     except:
         pass
 
-results = sorted(results,key=lambda x:x[1],reverse=True)
+# sortieren
+results = sorted(results, key=lambda x: x["score"], reverse=True)
 
-for t,val in results:
-    st.write(f"{t} → {val:.1f}%")
+# TOP 6 anzeigen
+top = results[:6]
+
+cols = st.columns(3)
+
+for i, stock in enumerate(top):
+    with cols[i % 3]:
+        color = "🟢" if stock["score"] > 40 else "🟡" if stock["score"] > 20 else "🔴"
+
+        st.markdown(f"""
+        <div style="
+            background:#1a2338;
+            padding:1rem;
+            border-radius:12px;
+            text-align:center;
+            border:2px solid #2e3b5c;
+        ">
+            <h3 style="margin:0;">{stock['ticker']}</h3>
+            <p style="font-size:1.2rem; margin:0.5rem 0;">
+                {color} {stock['score']:.1f}%
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        if st.button(f"Analysieren {stock['ticker']}", key=stock['ticker']):
+            st.session_state["ticker"] = stock["ticker"]
+            st.rerun()
+
+
